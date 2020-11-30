@@ -8,8 +8,10 @@ import (
 	"golang.org/x/net/html"
 )
 
-type tokenInfo struct {
-	tokenData string
+type newsEntry struct {
+	//Entry row of SQL Table to be Created
+	hyperRef string
+	title    string
 }
 
 func main() {
@@ -33,7 +35,8 @@ func main() {
 				token := tokenStream.Token()
 				tokenFound := findTokenByAttributes(token, "div", "id", "MainPage_latest_news_text")
 				if tokenFound {
-					findTokensInsideDiv(tokenStream, "a", "href")
+					newsEntries := findTokensInsideDiv(tokenStream, "a", "href")
+					fmt.Println(newsEntries)
 					return
 				}
 			}
@@ -52,7 +55,7 @@ func getHTMLTokenStreamFromURL(url string) *html.Tokenizer {
 
 func findTokenByAttributes(t html.Token, tag string, attrbiuteKey string, attrbiutevalue string) bool {
 	if t.Data == tag {
-		for _, divAttr := range t.Attr {
+		for _, divAttr := range t.Attr { //search for the 'id' attribute and expected value
 			if divAttr.Key == attrbiuteKey && divAttr.Val == attrbiutevalue {
 				fmt.Println("Found Div with Id : ", divAttr.Val)
 				return true
@@ -62,19 +65,34 @@ func findTokenByAttributes(t html.Token, tag string, attrbiuteKey string, attrbi
 	return false
 }
 
-func findTokensInsideDiv(ts *html.Tokenizer, tag string, attrbiuteKey string) {
+func findTokensInsideDiv(ts *html.Tokenizer, tag string, attrbiuteKey string) []newsEntry {
+	var newsEntries []newsEntry
 	for {
 		if ts.Next() == html.ErrorToken {
-			return
+			return newsEntries //End of Document
 		}
 		t := ts.Token()
 		if t.Data == "div" {
-			return //End of Div
+			return newsEntries //End of Div
 		}
 		if t.Data == tag {
+			resetEntry := true
+			ne := newsEntry{}
 			for _, divAttr := range t.Attr {
-				if divAttr.Key == attrbiuteKey {
-					fmt.Println("Found Href : ", divAttr.Val)
+
+				if resetEntry { //start new entry
+					ne = newsEntry{}
+				}
+
+				if divAttr.Key == attrbiuteKey { // add href
+					ne.hyperRef = divAttr.Val
+					resetEntry = false
+				}
+
+				if divAttr.Key == "title" { // add title
+					ne.title = divAttr.Val
+					newsEntries = append(newsEntries, ne)
+					resetEntry = true
 				}
 			}
 		}
