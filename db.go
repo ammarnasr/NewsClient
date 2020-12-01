@@ -7,8 +7,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-const username = "root"
-const password = "cogitoergosum"
+const username = "username"
+const password = "password"
 const dbName = "news"
 const tableName = "links"
 const column1 = "title"
