@@ -8,16 +8,11 @@ import (
 	"golang.org/x/net/html"
 )
 
-type newsEntry struct {
-	//Entry row of SQL Table to be Created
-	hyperRef string
-	title    string
-}
-
 func main() {
 	// A Tokenizer returns a stream of HTML Tokens
+	db := createDBObject(username, password, dbName)
+	db.Query("Delete from links")
 	tokenStream := getHTMLTokenStreamFromURL("https://en.wikinews.org/wiki/Main_Page")
-
 	for {
 
 		tokenType := tokenStream.Next()
@@ -36,7 +31,10 @@ func main() {
 				tokenFound := findTokenByAttributes(token, "div", "id", "MainPage_latest_news_text")
 				if tokenFound {
 					newsEntries := findTokensInsideDiv(tokenStream, "a", "href")
-					fmt.Println(newsEntries)
+					for _, ne := range newsEntries {
+						addNewsEntry(db, ne)
+					}
+					db.Close()
 					return
 				}
 			}
