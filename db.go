@@ -31,7 +31,7 @@ func createDBObject(username string, password string, dbName string) *sql.DB {
 func addNewsEntry(db *sql.DB, ne newsEntry) {
 	duplicate := findNewsEntry(db, ne)
 	if duplicate {
-		fmt.Println("Duplicate Value")
+		//fmt.Println("Duplicate Value")
 		return
 	}
 	insertValueToColumnOfTable(db, tableName, column1, column2, ne.title, ne.hyperRef)
@@ -59,9 +59,11 @@ func findValueFromTable(db *sql.DB, tableName string, column1 string, column2 st
 			fmt.Println("Can't Scan values: ", err)
 		}
 		if ne.title == value1 && ne.hyperRef == value2 {
+			defer rows.Close()
 			return true
 		}
 	}
+	defer rows.Close()
 	return false
 }
 
@@ -71,4 +73,20 @@ func getAllRowsFromColumns(db *sql.DB, tableName string, column1 string, column2
 		fmt.Println("Can't Select values: ", err)
 	}
 	return rows
+}
+
+func displayTable(db *sql.DB, tableName string) {
+	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s", tableName))
+	if err != nil {
+		fmt.Println("Can't Select values: ", err)
+	}
+	for rows.Next() {
+		ne := newsEntry{}
+		err := rows.Scan(&ne.title, &ne.hyperRef)
+		if err != nil {
+			fmt.Println("Can't Scan values: ", err)
+		}
+		fmt.Printf("%s \t %s \n", ne.title, ne.hyperRef)
+	}
+	defer rows.Close()
 }

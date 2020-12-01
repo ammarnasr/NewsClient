@@ -22,7 +22,7 @@ func main() {
 		case html.ErrorToken:
 			{
 				// End of the document
-				return
+				tokenStream = getHTMLTokenStreamFromURL("https://en.wikinews.org/wiki/Main_Page")
 			}
 
 		case html.StartTagToken: // Opening Tag
@@ -34,8 +34,6 @@ func main() {
 					for _, ne := range newsEntries {
 						addNewsEntry(db, ne)
 					}
-					db.Close()
-					return
 				}
 			}
 		}
@@ -55,7 +53,7 @@ func findTokenByAttributes(t html.Token, tag string, attrbiuteKey string, attrbi
 	if t.Data == tag {
 		for _, divAttr := range t.Attr { //search for the 'id' attribute and expected value
 			if divAttr.Key == attrbiuteKey && divAttr.Val == attrbiutevalue {
-				fmt.Println("Found Div with Id : ", divAttr.Val)
+				//fmt.Println("Found Div with Id : ", divAttr.Val)
 				return true
 			}
 		}
