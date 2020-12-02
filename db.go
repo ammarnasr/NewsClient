@@ -11,11 +11,11 @@ import (
 )
 
 const ( //Insert your own Credentials
-	username        = "root"
-	password        = "cogitoergosum"
+	username        = "username"
+	password        = "password"
 	hostname        = "127.0.0.1:3306"
-	dbname          = "newdb2"
-	tableName       = "newtable2"
+	dbname          = "dbname"
+	tableName       = "tableName"
 	column1         = "title"
 	column2         = "href"
 	maxIdleConns    = 20
@@ -158,7 +158,7 @@ func configureConnection(db *sql.DB) {
 }
 
 func openCreateTable(db *sql.DB, tablename string, column1 string, column2 string) {
-	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s(id int primary key auto_increment, %s text, %s text)", tablename, column1, column2)
+	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s(id int primary key auto_increment, %s text, %s text, created_at datetime default CURRENT_TIMESTAMP)", tablename, column1, column2)
 	cntx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 	res, err := db.ExecContext(cntx, query)
