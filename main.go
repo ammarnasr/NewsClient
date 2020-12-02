@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,35 +14,9 @@ func main() {
 	db := openCreateDB(username, password, hostname, dbname)
 	openCreateTable(db, tableName, column1, column2)
 
-	// A Tokenizer returns a stream of HTML Tokens
-	tokenStream := getHTMLTokenStreamFromURL("https://en.wikinews.org/wiki/Main_Page")
+	sourceURL := "https://en.wikinews.org/wiki/Main_Page"
 
-	//Request news page and extract href and title of latest news div
-	for {
-
-		tokenType := tokenStream.Next()
-
-		switch tokenType {
-
-		case html.ErrorToken:
-			{
-				// End of the document
-				tokenStream = getHTMLTokenStreamFromURL("https://en.wikinews.org/wiki/Main_Page")
-			}
-
-		case html.StartTagToken: // Opening Tag
-			{
-				token := tokenStream.Token()
-				tokenFound := findTokenByAttributes(token, "div", "id", "MainPage_latest_news_text")
-				if tokenFound {
-					newsEntries := findTokensInsideDiv(tokenStream, "a", "href")
-					for _, ne := range newsEntries {
-						addNewsEntry(db, ne)
-					}
-				}
-			}
-		}
-	}
+	getNewsFromSource(db, sourceURL)
 }
 
 func getHTMLTokenStreamFromURL(url string) *html.Tokenizer {
@@ -93,6 +68,37 @@ func findTokensInsideDiv(ts *html.Tokenizer, tag string, attrbiuteKey string) []
 					ne.title = divAttr.Val
 					newsEntries = append(newsEntries, ne)
 					resetEntry = true
+				}
+			}
+		}
+	}
+}
+
+func getNewsFromSource(db *sql.DB, sourceURL string) {
+	tokenStream := getHTMLTokenStreamFromURL(sourceURL)
+
+	//Request news page and extract href and title of latest news div
+	for {
+
+		tokenType := tokenStream.Next()
+
+		switch tokenType {
+
+		case html.ErrorToken:
+			{
+				// End of the document
+				tokenStream = getHTMLTokenStreamFromURL("https://en.wikinews.org/wiki/Main_Page")
+			}
+
+		case html.StartTagToken: // Opening Tag
+			{
+				token := tokenStream.Token()
+				tokenFound := findTokenByAttributes(token, "div", "id", "MainPage_latest_news_text")
+				if tokenFound {
+					newsEntries := findTokensInsideDiv(tokenStream, "a", "href")
+					for _, ne := range newsEntries {
+						addNewsEntry(db, ne)
+					}
 				}
 			}
 		}
