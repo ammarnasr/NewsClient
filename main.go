@@ -11,8 +11,7 @@ import (
 
 func main() {
 	//Open Database or Create new DB and table if not existing
-	db := openCreateDB(username, password, hostname, dbname)
-	openCreateTable(db, tableName, column1, column2)
+	db := openCreateDbTable(username, password, hostname, dbname, tableName, column1, column2)
 
 	sourceURL := "https://en.wikinews.org/wiki/Main_Page"
 

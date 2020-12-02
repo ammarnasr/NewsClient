@@ -173,3 +173,9 @@ func openCreateTable(db *sql.DB, tablename string, column1 string, column2 strin
 	}
 	fmt.Printf("Rows affected when creating table: %d", rows)
 }
+
+func openCreateDbTable(username string, password string, hostname string, dbname string, tablename string, column1 string, column2 string) *sql.DB {
+	db := openCreateDB(username, password, hostname, dbname)
+	openCreateTable(db, tablename, column1, column2)
+	return db
+}
