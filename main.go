@@ -9,10 +9,14 @@ import (
 )
 
 func main() {
+	//Open Database or Create new DB and table if not existing
+	db := openCreateDB(username, password, hostname, dbname)
+	openCreateTable(db, tableName, column1, column2)
+
 	// A Tokenizer returns a stream of HTML Tokens
-	db := createDBObject(username, password, dbName)
-	db.Query("Delete from links")
 	tokenStream := getHTMLTokenStreamFromURL("https://en.wikinews.org/wiki/Main_Page")
+
+	//Request news page and extract href and title of latest news div
 	for {
 
 		tokenType := tokenStream.Next()

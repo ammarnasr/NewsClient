@@ -1,18 +1,27 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+	"os"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
-const username = "username"
-const password = "password"
-const dbName = "news"
-const tableName = "links"
-const column1 = "title"
-const column2 = "href"
+const ( //Insert your own Credentials
+	username        = "root"
+	password        = "cogitoergosum"
+	hostname        = "127.0.0.1:3306"
+	dbname          = "newsa"
+	tableName       = "linksa"
+	column1         = "title"
+	column2         = "href"
+	maxIdleConns    = 20
+	maxOpenConns    = 20
+	connMaxLifetime = 5 * time.Minute
+)
 
 type newsEntry struct {
 	//Entry row of SQL Table to be Created
@@ -20,18 +29,9 @@ type newsEntry struct {
 	hyperRef string
 }
 
-func createDBObject(username string, password string, dbName string) *sql.DB {
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(127.0.0.1:3306)/%s", username, password, dbName))
-	if err != nil {
-		fmt.Println("Can't creat DB object: ", err)
-	}
-	return db
-}
-
 func addNewsEntry(db *sql.DB, ne newsEntry) {
 	duplicate := findNewsEntry(db, ne)
 	if duplicate {
-		//fmt.Println("Duplicate Value")
 		return
 	}
 	insertValueToColumnOfTable(db, tableName, column1, column2, ne.title, ne.hyperRef)
@@ -89,4 +89,87 @@ func displayTable(db *sql.DB, tableName string) {
 		fmt.Printf("%s \t %s \n", ne.title, ne.hyperRef)
 	}
 	defer rows.Close()
+}
+
+func openCreateDB(username string, password string, hostname string, dbname string) *sql.DB {
+	createNewDB(username, password, hostname, dbname)
+	return openExistingDB(username, password, hostname, dbname)
+}
+
+func dataSourceName(username string, password string, hostname string, dbname string) string {
+	return fmt.Sprintf("%s:%s@tcp(%s)/%s", username, password, hostname, dbname)
+}
+
+func createNewDB(username string, password string, hostname string, dbname string) {
+	db, err := sql.Open("mysql", dataSourceName(username, password, hostname, ""))
+	if err != nil {
+		fmt.Printf("Error when opening DB: %s\n", err)
+		return
+	}
+
+	cntx, cancelFunction := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelFunction()
+
+	res, err := db.ExecContext(cntx, "CREATE DATABASE IF NOT EXISTS "+dbname)
+	if err != nil {
+		fmt.Printf("Error when here creating DB: %s\n", err)
+		return
+	}
+
+	nRows, err := res.RowsAffected()
+	if err != nil {
+		fmt.Printf("Error when fetching Rows: %s\n", err)
+		return
+	}
+
+	fmt.Printf("Rows affected: %d \n", nRows)
+	defer db.Close()
+}
+
+func openExistingDB(username string, password string, hostname string, dbname string) *sql.DB {
+	db, err := sql.Open("mysql", dataSourceName(username, password, hostname, dbname))
+	if err != nil {
+		fmt.Printf("Error when opening DB: %s\n", err)
+		os.Exit(1)
+	}
+	pingConnection(db)
+	configureConnection(db)
+	return db
+}
+
+func pingConnection(db *sql.DB) {
+	cntx, cancelFunction := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelFunction()
+
+	err := db.PingContext(cntx)
+
+	if err != nil {
+		fmt.Printf("Error when Pinging DB: %s", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Connected to DB Successfully")
+}
+
+func configureConnection(db *sql.DB) {
+	db.SetMaxIdleConns(maxIdleConns)
+	db.SetMaxOpenConns(maxOpenConns)
+	db.SetConnMaxLifetime(connMaxLifetime)
+}
+
+func openCreateTable(db *sql.DB, tablename string, column1 string, column2 string) {
+	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s(%s text, %s text)", tablename, column1, column2)
+	cntx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelfunc()
+	res, err := db.ExecContext(cntx, query)
+	if err != nil {
+		fmt.Printf("Error %s when creating table", err)
+		os.Exit(1)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		fmt.Printf("Error %s when fetching rows", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Rows affected when creating table: %d", rows)
 }
